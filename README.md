@@ -5,12 +5,12 @@ This project allows you to control a 4-wheel drive robot car using an **Arduino 
 ## Project Demo
 
 ### Button Mode
-    
-<img src="demo/button_mode_demo.gif" width=350 alt="Button Mode"/>
+   
+<img src="demo/button_mode_demo.gif" width=400 alt="Button Mode"/>
 
 ### Gyro Mode
 
-<img src="demo/gyro_mode_demo.gif" width=350 alt="Gyro Mode"/>
+<img src="demo/gyro_mode_demo.gif" width=400 alt="Gyro Mode"/>
 
 ## How It Works
 
