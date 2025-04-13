@@ -2,7 +2,7 @@
 
 SoftwareSerial BTSerial(10, 11); // RX, TX
 
-// L298N Motor Pins
+//----L298N Motor Pins----//
 const int IN1 = 2;  // Left motor direction
 const int IN2 = 3;
 const int IN3 = 4;  // Right motor direction
@@ -48,7 +48,7 @@ void loop() {
   }
 }
 
-
+//----Handles command received----//
 void handleCommand(String cmd) {
   if (cmd == "FORWARD") {
     moveForward();
@@ -71,7 +71,7 @@ void handleCommand(String cmd) {
   }
 }
 
-// Motion Functions
+//-------------------------Motion Functions--------------------------//
 void moveForward() {
   digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW); // Left forward
   digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW); // Right forward
@@ -103,7 +103,7 @@ void turnRight() {
 void moveForwardLeft() {
   digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);
   digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
-  analogWrite(ENA, SPEED_LEFT * 0.6);  // slower left
+  analogWrite(ENA, SPEED_LEFT * 0.6);  // slower left using pwm
   analogWrite(ENB, SPEED_RIGHT);
 }
 
@@ -111,13 +111,13 @@ void moveForwardRight() {
   digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
   digitalWrite(IN3, HIGH); digitalWrite(IN4, LOW);
   analogWrite(ENA, SPEED_LEFT);
-  analogWrite(ENB, SPEED_RIGHT * 0.6);  // slower right
+  analogWrite(ENB, SPEED_RIGHT * 0.6);  // slower right usin pwm
 }
 
 void moveBackwardLeft() {
   digitalWrite(IN1, LOW); digitalWrite(IN2, HIGH);
   digitalWrite(IN3, LOW); digitalWrite(IN4, HIGH);
-  analogWrite(ENA, SPEED_LEFT * 0.6);
+  analogWrite(ENA, SPEED_LEFT * 0.6); //slower left using pwm
   analogWrite(ENB, SPEED_RIGHT);
 }
 
@@ -125,7 +125,7 @@ void moveBackwardRight() {
   digitalWrite(IN1, LOW); digitalWrite(IN2, HIGH);
   digitalWrite(IN3, LOW); digitalWrite(IN4, HIGH);
   analogWrite(ENA, SPEED_LEFT);
-  analogWrite(ENB, SPEED_RIGHT * 0.6);
+  analogWrite(ENB, SPEED_RIGHT * 0.6); //slower right using pwm
 }
 
 void stopMotors() {

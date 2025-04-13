@@ -1,5 +1,5 @@
 #include <Wire.h>
-#include <BluetoothSerial.h>  // Include BluetoothSerial library
+#include <BluetoothSerial.h> 
 
 #define MPU_ADDR 0x68
 
@@ -23,7 +23,7 @@ bool comboInProgress = false;
 bool comboLockActive = false;
 String comboMainDirection = "";
 
-// BUTTON MODE VARIABLES
+//----------------BUTTON MODE VARIABLES-----------------//
 const int FORWARD_BTN = 4;
 const int BACKWARD_BTN = 5;
 const int LEFT_BTN = 23;
@@ -34,28 +34,27 @@ bool buttonMode = true;
 String prevBtnDir = "";
 bool allowNewBtnInput = true;
 
-// LONG PRESS TRACKING
+//--------------------LONG PRESS TRACKING----------------------//
 unsigned long modeBtnPressTime = 0;
 bool recalibrationDone = false;
 const unsigned long longPressDuration = 2000;  // 2 seconds for long press
 bool longPressTriggered = false;
 
-// BUTTON COMBO TRACKING
+//------------------BUTTON COMBO TRACKING------------------------//
 unsigned long btnPressStartTime = 0;
 bool waitingForCombo = false;
 String tempSingleDir = "";
 const unsigned long comboDelay = 100;
 
-// Bluetooth setup
-BluetoothSerial BT;  // BluetoothSerial object for Bluetooth Classic communication
-bool connected = false;  // Track if the ESP32 is connected to the HC-05
+//-----------------------Bluetooth setup---------------------//
+BluetoothSerial BT; 
+bool connected = false; 
 
 void setup() {
   Serial.begin(115200);
   Wire.begin();
 
-  // Start Bluetooth communication
-  BT.begin("ESP32_Master",true);  // Replace with your device name
+  BT.begin("ESP32_Master",true);
 
   pinMode(FORWARD_BTN, INPUT_PULLUP);
   pinMode(BACKWARD_BTN, INPUT_PULLUP);
@@ -74,82 +73,75 @@ void setup() {
 
   Serial.println("Gesture + Button Mode Ready (Bluetooth Enabled)");
   BT.println("Bluetooth Initialized");
-
-  // Attempt to connect to HC-05
+  
   connectToHC05();
 }
 
 void loop() {
-  // If not connected, try to connect
   if (!connected) {
     connectToHC05();
   }
 
-  // Handle mode switching with toggle button
   if (digitalRead(MODE_BTN) == HIGH) {
     if (modeBtnPressTime == 0) {
-      modeBtnPressTime = millis(); // Record the time when the button is pressed
+      modeBtnPressTime = millis();
     } else if (millis() - modeBtnPressTime > debounceDelay) {
-      // Switch mode after debounce delay
-      buttonMode = !buttonMode; // Toggle buttonMode
-      modeBtnPressTime = 0;  // Reset the press time
-      longPressTriggered = false; // Reset the long press trigger flag
+
+      buttonMode = !buttonMode; 
+      modeBtnPressTime = 0;
+      longPressTriggered = false;
     }
   } else {
-    // Check if the button is being held for a long press
     if (modeBtnPressTime > 0 && millis() - modeBtnPressTime >= longPressDuration && !longPressTriggered) {
-      // Long press detected, reset the stop position
       resetStopPosition();
       longPressTriggered = true;
     }
   }
 
-  // Print the current mode whenever it changes
   static bool prevMode = false;
   if (buttonMode != prevMode) {
     if (buttonMode) {
-      Serial.println("🟢 BUTTON MODE ENABLED");
-      BT.println("🟢 BUTTON MODE ENABLED");
+      Serial.println("BUTTON MODE ENABLED");
+      BT.println("BUTTON MODE ENABLED");
     } else {
-      Serial.println("🌀 GYRO MODE ENABLED");
-      BT.println("🌀 GYRO MODE ENABLED");
+      Serial.println("GYRO MODE ENABLED");
+      BT.println("GYRO MODE ENABLED");
     }
-    prevMode = buttonMode;  // Update prevMode to the current mode
+    prevMode = buttonMode;
   }
 
-  // Handle the corresponding mode
   if (buttonMode) {
-    handleButtonControl();  // Call button control function when in button mode
+    handleButtonControl();
   } else {
-    handleGyroControl();  // Call gyro control function when in gyro mode
+    handleGyroControl();
   }
 }
 
-// Attempt to connect to HC-05
+//-------Attempt to connect to HC-05------//
 void connectToHC05() {
   if (!BT.connected()) {
     Serial.println("Attempting to connect to HC-05...");
-    BT.connect("HC-05");  // Try connecting to HC-05 by its Bluetooth name
+    BT.connect("HC-05");
     if (BT.connected()) {
       connected = true;
       Serial.println("Connected to HC-05!");
       BT.println("Connected to HC-05!");
     } else {
       Serial.println("Connection failed. Retrying...");
-      delay(1000);  // Retry after 1 second
+      delay(1000);
     }
   }
 }
 
-// Reset the stop position by recalibrating the accelerometer and gyro
+//----Reset the stop position by recalibrating the accelerometer and gyro----//
 void resetStopPosition() {
-  captureInitialAccel();  // Re-capture initial accelerometer values
-  calibrateGyro();        // Re-calibrate the gyroscope
+  captureInitialAccel();
+  calibrateGyro();
   Serial.println("Stop position reset!");
   BT.println("Stop position reset!");
 }
 
-// Handle Button Control Mode
+//----Handle Button Control Mode----//
 void handleButtonControl() {
   bool fwd = digitalRead(FORWARD_BTN) == HIGH;
   bool bwd = digitalRead(BACKWARD_BTN) == HIGH;
@@ -158,7 +150,6 @@ void handleButtonControl() {
 
   String btnDir = "";
 
-  // Check for no buttons pressed -> send STOP
   if (!fwd && !bwd && !lft && !rgt) {
     if (prevBtnDir != "STOP") {
       sendDirection("STOP");
@@ -171,7 +162,6 @@ void handleButtonControl() {
     return;
   }
 
-  // Combo buttons first
   if (fwd && lft) btnDir = "FORWARD LEFT";
   else if (fwd && rgt) btnDir = "FORWARD RIGHT";
   else if (bwd && lft) btnDir = "BACKWARD LEFT";
@@ -184,7 +174,6 @@ void handleButtonControl() {
     return;
   }
 
-  // Handle single button press
   if (fwd) btnDir = "FORWARD";
   else if (bwd) btnDir = "BACKWARD";
   else if (lft) btnDir = "LEFT";
@@ -203,18 +192,18 @@ void handleButtonControl() {
   }
 }
 
-// Send new direction if it's different from the last one
+//----Send new direction if it's different from the last one---//
 void sendIfNewDirection(String dir) {
   if (dir != prevBtnDir && allowNewBtnInput) {
     sendDirection(dir);
     prevBtnDir = dir;
     if (dir.indexOf(" ") > 0) {
-      allowNewBtnInput = false;  // For combos, wait until all buttons are released
+      allowNewBtnInput = false;
     }
   }
 }
 
-// Handle Gyro Control Mode
+//----Handle Gyro Control Mode----//
 void handleGyroControl() {
   readMPUGyro();
   readMPUAccel();
@@ -279,7 +268,7 @@ void handleGyroControl() {
   }
 }
 
-// Combine two directions into a combo direction
+//----Combine two directions into a combo direction----//
 String combineDirections(String first, String second) {
   if ((first == "FORWARD" && second == "LEFT") || (first == "LEFT" && second == "FORWARD"))
     return "FORWARD LEFT";
@@ -292,31 +281,32 @@ String combineDirections(String first, String second) {
   return "";
 }
 
+//----Return the Main Directions if detected after combo----//
 String getMainDirection(String combo) {
   if (combo.startsWith("FORWARD")) return "FORWARD";
   if (combo.startsWith("BACKWARD")) return "BACKWARD";
   return "";
 }
 
-// Reset combo tracking
+//----Reset combo tracking----//
 void resetCombo() {
   comboInProgress = false;
   firstDirection = "";
   firstDirectionTime = 0;
 }
 
-// Send direction to Bluetooth serial
+//----Send direction to Bluetooth serial----//
 void sendDirection(String dir) {
   unsigned long now = millis();
   if (dir != lastOutput && (now - lastOutputTime >= debounceDelay)) {
     Serial.println("Direction: " + dir);
-    BT.println(dir);  // Send direction over Bluetooth to slave
+    BT.println(dir);
     lastOutput = dir;
     lastOutputTime = now;
   }
 }
 
-// Read gyroscope data from the MPU6050
+//----Read gyroscope data from the MPU6050----//
 void readMPUGyro() {
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(0x43);
@@ -332,7 +322,7 @@ void readMPUGyro() {
   gyroZ = gyroZ_raw / 131.0;
 }
 
-// Read accelerometer data from the MPU6050
+//----Read accelerometer data from the MPU6050----//
 void readMPUAccel() {
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(0x3D);
@@ -343,21 +333,21 @@ void readMPUAccel() {
   accZ_raw = Wire.read() << 8 | Wire.read();
 }
 
-// Capture initial accelerometer values
+//----Capture initial accelerometer values----//
 void captureInitialAccel() {
   readMPUAccel();
   accY_init = accY_raw;
   accZ_init = accZ_raw;
 }
 
-// Check if the device is in the stop position based on accelerometer data
+//----Check if the device is in the stop position based on accelerometer data----//
 bool isInStopPosition() {
   const int accelTolerance = 2000;
   return abs(accY_raw - accY_init) < accelTolerance &&
          abs(accZ_raw - accZ_init) < accelTolerance;
 }
 
-// Calibrate the gyroscope by averaging samples
+//-----Calibrate the gyroscope by averaging samples-----//
 void calibrateGyro() {
   long sumY = 0, sumZ = 0;
   int samples = 100;
